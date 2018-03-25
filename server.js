@@ -19,7 +19,9 @@ app.use(morgan('combined'));
 app.use(bodyParser.json());
 app.use(session({
     secret: 'someRandomSecretValue',
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 30}
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 30},
+    resave: true,
+    saveUninitialized: true
 }));
 
 function createTemplate(data){
@@ -27,7 +29,7 @@ function createTemplate(data){
     var heading=data.heading;
     var date=data.date;
     var content=data.content;
-    
+
 var htmlTemplate=
 `<html>
     <head>
@@ -36,8 +38,8 @@ var htmlTemplate=
             </title>
             <meta name="viewport" content="width=device-width,initial-scale=1"/>
             <link href="/ui/style.css" rel="stylesheet" />
-                    
-            
+
+
     </head>
     <body>
         <div class="container">
@@ -63,7 +65,7 @@ var htmlTemplate=
         </div>
     </div>
     <script type="text/javascript" src="/ui/article.js"></script>
-        
+
         </body>
     </html>
     `;
@@ -74,7 +76,7 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'ui', 'index.html'));
 });
 
-app.get('/ui/css/bootstrap.min.css', function (req, res) { 
+app.get('/ui/css/bootstrap.min.css', function (req, res) {
     res.sendFile(path.join(__dirname, 'ui/css', 'bootstrap.min.css'));
 });
 
@@ -138,22 +140,22 @@ app.post('/create-user', function (req, res)
    }
 });
 
-app.post('/login', function (req, res) 
+app.post('/login', function (req, res)
 {
    var username = req.body.username;
    var password = req.body.password;
    if(!username.trim() || !password.trim())
    {
-     res.status(400).send('Username or password field blank.'); 
+     res.status(400).send('Username or password field blank.');
    }
    else
    {
         pool.query('SELECT * FROM "user" WHERE username = $1', [username], function (err, result)
         {
-            if (err) 
+            if (err)
             {
             res.status(500).send(err.toString());
-            } 
+            }
             else
             {
                 if (result.rows.length === 0)
@@ -167,11 +169,11 @@ app.post('/login', function (req, res)
                     var hashedPassword = hash(password, salt);
                     if (hashedPassword === dbString)
                     {
-                
+
                         req.session.auth = {userId: result.rows[0].id};
-                
+
                         res.send('credentials correct!');
-                
+
                     }
                     else
                     {
@@ -189,7 +191,7 @@ app.get('/check-login', function (req, res) {
            if (err) {
               res.status(500).send(err.toString());
            } else {
-              res.send(result.rows[0].username);    
+              res.send(result.rows[0].username);
            }
        });
    } else {
@@ -247,7 +249,7 @@ app.post('/submit-comment/:articleName', function (req, res) {
                         });
                 }
             }
-       });     
+       });
     } else {
         res.status(403).send('Only logged in users can comment');
     }
@@ -273,7 +275,7 @@ app.get('/ui/:fileName', function (req, res) {
 });
 
 
-var port = 8080;
-app.listen(8080, function () {
+var port = process.env.PORT||8080;
+app.listen(port, function () {
   console.log(`IMAD course app listening on port ${port}!`);
 });
